@@ -808,3 +808,72 @@ p {
   text-align: center;
   margin-top: 14px;
 }
+
+
+.view-topline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 58px;
+}
+
+.inline-view-title {
+  font-size: clamp(28px, 8vw, 48px);
+  font-weight: 950;
+  color: #b9f6ff;
+  text-shadow:
+    0 1px 0 #ffffff,
+    0 3px 0 #0b83c8,
+    0 0 18px rgba(87,221,255,.58);
+  line-height: 1;
+}
+
+.station-view .station-stopwatches {
+  margin-top: 16px;
+}
+
+.team-counter-section {
+  margin-top: 2px;
+  gap: 8px;
+}
+
+.team-points-card {
+  margin-bottom: 0;
+}
+
+.manual-round-box {
+  margin-top: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.manual-round-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.manual-round-row input {
+  min-width: 0;
+}
+
+@media (orientation: portrait) and (max-width: 600px) {
+  .view-topline {
+    gap: 10px;
+    min-height: 52px;
+  }
+
+  .inline-view-title {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .team-counter-section {
+    margin-top: 0;
+    gap: 7px;
+  }
+
+  .team-points-card {
+    margin-bottom: 0;
+  }
+}

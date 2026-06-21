@@ -55,7 +55,7 @@ def build_state():
         for station in range(1, new_state["stationCount"] + 1)
     }
     new_state["teams"] = {
-        str(team): {"occupiedBy": None, "villages": 0, "towns": 0, "cities": 0}
+        str(team): {"occupiedBy": None, "name": f"Team {team}", "villages": 0, "towns": 0, "cities": 0}
         for team in range(1, new_state["teamCount"] + 1)
     }
     return new_state
@@ -102,7 +102,7 @@ def normalize_structure():
     state["stations"] = new_stations
 
     state["teams"] = {
-        str(team): old_teams.get(str(team), {"occupiedBy": None, "villages": 0, "towns": 0, "cities": 0})
+        str(team): old_teams.get(str(team), {"occupiedBy": None, "name": f"Team {team}", "villages": 0, "towns": 0, "cities": 0})
         for team in range(1, int(state["teamCount"]) + 1)
     }
 
@@ -188,6 +188,37 @@ def update_station_name(data):
     if station_id in state["stations"]:
         state["stations"][station_id]["name"] = name or f"Station {station_id}"
 
+    broadcast_state()
+
+
+
+@socketio.on("update_team_name")
+def update_team_name(data):
+    team_id = str(data.get("team"))
+    name = str(data.get("name", "")).strip()
+
+    if team_id in state["teams"]:
+        state["teams"][team_id]["name"] = name or f"Team {team_id}"
+
+    broadcast_state()
+
+
+@socketio.on("set_active_round")
+def set_active_round(data):
+    try:
+        requested_round = int(data.get("round"))
+    except (TypeError, ValueError):
+        return
+
+    state["activeRound"] = max(1, min(int(state["roundCount"]), requested_round))
+    broadcast_state()
+
+
+@socketio.on("reset_round_timer")
+def reset_round_timer():
+    state["roundRemainingSec"] = int(state["roundDurationSec"])
+    state["roundRunning"] = False
+    state["roundLastStartedAt"] = None
     broadcast_state()
 
 
@@ -301,7 +332,7 @@ def toggle_help_request(data):
         entity = state["teams"].get(entity_id)
         if not entity or entity.get("occupiedBy") != request.sid:
             return
-        label = f"Team {entity_id}"
+        label = entity.get("name") or f"Team {entity_id}"
     else:
         entity = state["stations"].get(entity_id)
         if not entity or entity.get("occupiedBy") != request.sid:

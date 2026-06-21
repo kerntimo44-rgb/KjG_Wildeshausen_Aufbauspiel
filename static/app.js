@@ -67,6 +67,15 @@ function stationName(stationId) {
   return state.stations[String(stationId)]?.name || `Station ${stationId}`;
 }
 
+function teamName(teamId) {
+  return state.teams[String(teamId)]?.name || `Team ${teamId}`;
+}
+
+function teamEmoji(teamId) {
+  const icons = ["🐟", "⛵", "🌊", "🐚", "🌀", "🛶", "🐠", "🌺", "🌴", "⭐"];
+  return icons[(Number(teamId) - 1) % icons.length];
+}
+
 function helpStatusFor(kind, id) {
   const req = (state.helpRequests || []).find(item => item.kind === kind && String(item.id) === String(id));
   return req ? req.status : null;
@@ -148,7 +157,7 @@ function renderLobby() {
     teams += `
       <div class="station-box">
         <div>
-          <div class="station-title">Team ${t}</div>
+          <div class="station-title">${teamEmoji(t)} ${escapeHtml(teamName(t))}</div>
         </div>
         ${button(`${occupied ? "🔒 Belegt" : "Betreten"}`, `joinTeam(${t})`, occupied ? "secondary" : "", occupied)}
       </div>
@@ -221,9 +230,17 @@ function renderOrga() {
           <div class="actions">
             ${button(state.roundRunning ? "⏸ Pause" : "▶ Runde starten", "toggleRound()")}
             ${button("⏭ Nächste Runde", "nextRound()", "secondary")}
+            ${button("⏱ Timer zurücksetzen", "resetRoundTimer()", "secondary full")}
             ${button("🔄 Alles zurücksetzen", "resetGame()", "danger full")}
             ${button("🏆 Team-Ranking", "go({type:'ranking'})", "secondary")}
             ${button("⏱ Timer", "go({type:'timer'})", "secondary")}
+          </div>
+          <div class="manual-round-box">
+            <label>Aktive Runde überschreiben</label>
+            <div class="manual-round-row">
+              <input id="manualRound" type="number" min="1" max="${state.roundCount}" value="${state.activeRound}">
+              ${button("Setzen", "setActiveRound()", "secondary")}
+            </div>
           </div>
         </section>
         <section class="grid">
@@ -233,6 +250,12 @@ function renderOrga() {
             <h2>🌴 Stationsnamen</h2>
             <div class="grid station-name-grid">
               ${stationNameInputs()}
+            </div>
+          </div>
+          <div class="card">
+            <h2>🛶 Teamnamen</h2>
+            <div class="grid station-name-grid">
+              ${teamNameInputs()}
             </div>
           </div>
         </section>
@@ -258,6 +281,13 @@ function renderOrga() {
       socket.emit("update_station_name", { station: s, name: e.target.value });
     });
   }
+
+  for (let t = 1; t <= state.teamCount; t++) {
+    const input = document.getElementById(`teamName-${t}`);
+    input.addEventListener("change", e => {
+      socket.emit("update_team_name", { team: t, name: e.target.value });
+    });
+  }
 }
 
 function stationNameInputs() {
@@ -273,8 +303,26 @@ function stationNameInputs() {
   return html;
 }
 
+function teamNameInputs() {
+  let html = "";
+  for (let t = 1; t <= state.teamCount; t++) {
+    html += `
+      <label class="station-name-row">
+        <strong>Team ${t}</strong>
+        <input id="teamName-${t}" value="${escapeHtml(teamName(t))}" placeholder="Name des Teams">
+      </label>
+    `;
+  }
+  return html;
+}
+
 function toggleRound() { socket.emit("toggle_round"); }
 function nextRound() { socket.emit("next_round"); }
+function resetRoundTimer() { socket.emit("reset_round_timer"); }
+function setActiveRound() {
+  const input = document.getElementById("manualRound");
+  socket.emit("set_active_round", { round: Number(input?.value || state.activeRound) });
+}
 function resetGame() { if (confirm("Wirklich alles auf Spielstart zurücksetzen? Stationsnamen werden ebenfalls zurückgesetzt.")) socket.emit("reset_game"); }
 
 function rankingHtml() {
@@ -285,7 +333,7 @@ function rankingHtml() {
       <h2>🏆 Team-Ranking</h2>
       ${rows.map((row, idx) => `
         <div class="ranking-row">
-          <strong>#${idx + 1} Team ${row.id}</strong>
+          <strong>#${idx + 1} ${escapeHtml(teamName(row.id))}</strong>
           <div class="bar-bg"><div class="bar" style="width:${row.pts / max * 100}%"></div></div>
           <div class="points">${row.pts}</div>
         </div>
@@ -365,11 +413,12 @@ function renderStation() {
 
   app.innerHTML = `
     <main class="station-view${helpClass('station', station)}">
-      ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
+      <div class="view-topline">
+        ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
+        <div class="inline-view-title">🌺 ${escapeHtml(stationName(station))}</div>
+      </div>
       <div class="top-spacer"></div>
       ${roundHeader()}
-      <h1 style="text-align:center;margin:14px 0;">🌺 ${escapeHtml(stationName(station))}</h1>
-      <p style="text-align:center;margin-top:-8px;margin-bottom:14px;">Station ${station}</p>
       <section class="grid station-stopwatches">${watches}</section>
       <button class="help-call-button" onclick="toggleHelp('station', '${station}')">Hilfe</button>
     </main>
@@ -386,19 +435,23 @@ function resetStopwatch(watch) {
 
 function renderTeam() {
   const teamId = String(view.team);
-  const team = state.teams[teamId] || { villages: 0, towns: 0, cities: 0 };
+  const team = state.teams[teamId] || { villages: 0, towns: 0, cities: 0, name: `Team ${teamId}` };
 
   app.innerHTML = `
     <main class="team-layout${helpClass('team', teamId)}">
       <section>
-        ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
+        <div class="view-topline">
+          ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
+          <div class="inline-view-title">${teamEmoji(teamId)} ${escapeHtml(teamName(teamId))}</div>
+        </div>
+        <div class="top-spacer"></div>
         ${roundHeader()}
-        <div class="card round" style="margin-top:12px">
-          <div class="label">🛶 Team ${teamId} Punkte</div>
+        <div class="card round team-points-card" style="margin-top:12px">
+          <div class="label">🛶 ${escapeHtml(teamName(teamId))} Punkte</div>
           <div class="timer">${points(team)}</div>
         </div>
       </section>
-      <section class="grid">
+      <section class="grid team-counter-section">
         ${counterRow("Dörfer", team.villages, "village_minus", "village_plus")}
         ${counterRow("Städte", team.towns, "town_minus", "town_plus")}
         ${counterRow("Großstädte", team.cities, "city_minus", "city_plus")}
