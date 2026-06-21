@@ -21,6 +21,7 @@ DEFAULTS = {
     "stations": {},
     "teams": {},
     "orgaClientId": None,
+    "helpRequests": [],
 }
 
 state = {}
@@ -112,6 +113,16 @@ def normalize_structure():
             stopwatches.pop(key, None)
 
 
+
+def remove_help_requests_for_sid(sid):
+    team_ids = [team_id for team_id, team in state["teams"].items() if team.get("occupiedBy") == sid]
+    station_ids = [station_id for station_id, station in state["stations"].items() if station.get("occupiedBy") == sid]
+    state["helpRequests"] = [
+        item for item in state["helpRequests"]
+        if not ((item["kind"] == "team" and item["id"] in team_ids) or (item["kind"] == "station" and item["id"] in station_ids))
+    ]
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -128,6 +139,7 @@ def handle_connect():
 def handle_disconnect():
     sid = request.sid
     clients.pop(sid, None)
+    remove_help_requests_for_sid(sid)
 
     for station in state["stations"].values():
         if station.get("occupiedBy") == sid:
@@ -232,6 +244,7 @@ def join_team(data):
 @socketio.on("leave_slot")
 def leave_slot():
     sid = request.sid
+    remove_help_requests_for_sid(sid)
     for station in state["stations"].values():
         if station.get("occupiedBy") == sid:
             station["occupiedBy"] = None
@@ -273,6 +286,65 @@ def update_team(data):
         team["towns"] += 1
 
     broadcast_state()
+
+
+
+@socketio.on("toggle_help_request")
+def toggle_help_request(data):
+    kind = str(data.get("kind"))
+    entity_id = str(data.get("id"))
+
+    if kind not in ("team", "station"):
+        return
+
+    if kind == "team":
+        entity = state["teams"].get(entity_id)
+        if not entity or entity.get("occupiedBy") != request.sid:
+            return
+        label = f"Team {entity_id}"
+    else:
+        entity = state["stations"].get(entity_id)
+        if not entity or entity.get("occupiedBy") != request.sid:
+            return
+        label = entity.get("name") or f"Station {entity_id}"
+
+    existing = next((item for item in state["helpRequests"] if item["kind"] == kind and item["id"] == entity_id), None)
+
+    if existing:
+        state["helpRequests"] = [
+            item for item in state["helpRequests"]
+            if not (item["kind"] == kind and item["id"] == entity_id)
+        ]
+    else:
+        state["helpRequests"].append({
+            "kind": kind,
+            "id": entity_id,
+            "label": label,
+            "status": "red",
+            "createdAt": time.time(),
+        })
+
+    broadcast_state()
+
+
+@socketio.on("helper_toggle_help")
+def helper_toggle_help(data):
+    kind = str(data.get("kind"))
+    entity_id = str(data.get("id"))
+
+    for item in list(state["helpRequests"]):
+        if item["kind"] == kind and item["id"] == entity_id:
+            if item.get("status") == "red":
+                item["status"] = "yellow"
+            else:
+                state["helpRequests"] = [
+                    req for req in state["helpRequests"]
+                    if not (req["kind"] == kind and req["id"] == entity_id)
+                ]
+            break
+
+    broadcast_state()
+
 
 
 def stopwatch_snapshot():

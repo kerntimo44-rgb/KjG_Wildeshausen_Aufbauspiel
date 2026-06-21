@@ -725,3 +725,86 @@ p {
 .lobby-section .station-subtitle {
   display: none;
 }
+
+
+.top-spacer {
+  height: 14px;
+}
+
+.help-call-button {
+  width: 100%;
+  margin-top: 18px;
+  background: #c62828;
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.32),
+    inset 0 -10px 16px rgba(90,0,0,.28),
+    0 7px 0 rgba(84, 0, 0, .58),
+    0 14px 24px rgba(0, 6, 26, .36);
+}
+
+.help-call-button:hover {
+  background: #d73535;
+}
+
+.help-active-red {
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, .18), transparent 34%),
+    linear-gradient(180deg, #7f141c 0%, #4d0810 60%, #18040a 100%) !important;
+}
+
+.help-active-yellow {
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, .20), transparent 34%),
+    linear-gradient(180deg, #9d7a10 0%, #6f4e04 58%, #211705 100%) !important;
+}
+
+.help-active-red .card,
+.help-active-yellow .card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08) 32%, rgba(0, 22, 76, .20) 100%),
+    rgba(3, 30, 68, .54);
+}
+
+.helper-view .help-list {
+  margin-top: 18px;
+}
+
+.help-button-red,
+.help-button-yellow {
+  width: 100%;
+  font-size: 20px;
+  padding: 18px 20px;
+}
+
+.help-button-red {
+  background: #c62828;
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.30),
+    inset 0 -10px 16px rgba(80,0,0,.28),
+    0 7px 0 rgba(84, 0, 0, .56),
+    0 14px 24px rgba(0, 6, 26, .36);
+}
+
+.help-button-red:hover {
+  background: #d73535;
+}
+
+.help-button-yellow {
+  background: #d8a91a;
+  color: #10243a;
+  text-shadow: 0 1px 0 rgba(255,255,255,.42);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.34),
+    inset 0 -10px 16px rgba(90,55,0,.22),
+    0 7px 0 rgba(104, 72, 0, .58),
+    0 14px 24px rgba(0, 6, 26, .32);
+}
+
+.help-button-yellow:hover {
+  background: #e6b82a;
+}
+
+.empty-help {
+  text-align: center;
+  margin-top: 14px;
+}

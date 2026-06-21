@@ -4,14 +4,15 @@ Render-fertige Flask-/Socket.IO-Webapp für das KjG-Aufbauspiel.
 
 ## Änderungen in dieser Version
 
-- Rundentimer aktualisiert sich jetzt direkt im Browser, ohne manuelles Neuladen.
-- Lobby-Titel: `KjG-Aufbauspiel`.
-- Default-Stationsnamen: Holz 1, Holz 2, Fisch 1, Fisch 2, Stein 1, Stein 2, Kokosnuss 1, Kokosnuss 2, Schilf 1, Schilf 2.
-- Mehrere Personen können gleichzeitig in die Orga-View.
+- Leerzeile zwischen Lobby-Button und Timer in Stations-, Team- und Helferansicht.
+- Neuer Helferraum in der Lobby.
+- Teams und Stationen können über einen roten Button „Hilfe“ rufen.
+- Hilferuf färbt den Hintergrund der jeweiligen Team-/Stationsansicht rot.
+- Helfer sehen Hilferufe in Reihenfolge des Eingangs.
+- Erster Klick im Helferraum: Hilferuf wird gelb, Hintergrund der rufenden Ansicht wird gelb.
+- Zweiter Klick im Helferraum: Hilferuf verschwindet, Hintergrund wird wieder normal.
+- Mehrere Helfer können gleichzeitig in den Helferraum.
 - Pro Station kann weiterhin nur eine Person beitreten.
-- Blinkeffekt in den letzten 5 Sekunden ist deutlicher, aber weich.
-- Orga-View-Untertext entfernt.
-- Lobby-Bereiche für Stationen und Teams sind optisch gleich aufgebaut.
 
 ## Lokal starten
 
@@ -24,4 +25,10 @@ python app.py
 
 ```bash
 gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app
+```
+
+## Render Environment
+
+```text
+PYTHON_VERSION=3.12.7
 ```

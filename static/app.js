@@ -67,6 +67,18 @@ function stationName(stationId) {
   return state.stations[String(stationId)]?.name || `Station ${stationId}`;
 }
 
+function helpStatusFor(kind, id) {
+  const req = (state.helpRequests || []).find(item => item.kind === kind && String(item.id) === String(id));
+  return req ? req.status : null;
+}
+
+function helpClass(kind, id) {
+  const status = helpStatusFor(kind, id);
+  if (status === "red") return " help-active-red";
+  if (status === "yellow") return " help-active-yellow";
+  return "";
+}
+
 function points(team) {
   return team.villages + team.towns * 2 + team.cities * 3;
 }
@@ -112,6 +124,7 @@ function render() {
   if (view.type === "timer") return renderBigTimer();
   if (view.type === "station") return renderStation();
   if (view.type === "team") return renderTeam();
+  if (view.type === "helper") return renderHelper();
 }
 
 function renderLobby() {
@@ -142,6 +155,15 @@ function renderLobby() {
     `;
   }
 
+  let helpers = `
+    <div class="station-box">
+      <div>
+        <div class="station-title">Helfer</div>
+      </div>
+      ${button("Betreten", "go({type:'helper'})")}
+    </div>
+  `;
+
   app.innerHTML = `
     <main class="page">
       <div class="topbar">
@@ -151,6 +173,7 @@ function renderLobby() {
       <div class="grid two">
         <section class="card lobby-section"><h2>🌴 Stationen</h2><div class="grid">${stations}</div></section>
         <section class="card lobby-section"><h2>🛶 Teams</h2><div class="grid">${teams}</div></section>
+        <section class="card lobby-section full"><h2>🛟 Helfer</h2><div class="grid">${helpers}</div></section>
       </div>
     </main>
   `;
@@ -169,6 +192,15 @@ function joinTeam(team) {
 }
 
 function renderOrga() {
+  let helpers = `
+    <div class="station-box">
+      <div>
+        <div class="station-title">Helfer</div>
+      </div>
+      ${button("Betreten", "go({type:'helper'})")}
+    </div>
+  `;
+
   app.innerHTML = `
     <main class="page">
       <div class="topbar">
@@ -283,6 +315,36 @@ function renderBigTimer() {
   `;
 }
 
+
+function renderHelper() {
+  const requests = [...(state.helpRequests || [])].sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+  const requestButtons = requests.length
+    ? requests.map(req => {
+        const cls = req.status === "yellow" ? "help-button-yellow" : "help-button-red";
+        const prefix = req.kind === "team" ? "Team" : "Station";
+        return `<button class="${cls}" onclick="helperToggleHelp('${req.kind}', '${req.id}')">${prefix}: ${escapeHtml(req.label)}</button>`;
+      }).join("")
+    : `<div class="card empty-help"><h2>Keine Hilferufe</h2><p>Wenn ein Team oder eine Station Hilfe ruft, erscheint es hier.</p></div>`;
+
+  app.innerHTML = `
+    <main class="station-view helper-view">
+      ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
+      <div class="top-spacer"></div>
+      ${roundHeader()}
+      <section class="grid help-list">${requestButtons}</section>
+    </main>
+  `;
+}
+
+function helperToggleHelp(kind, id) {
+  socket.emit("helper_toggle_help", { kind, id });
+}
+
+function toggleHelp(kind, id) {
+  socket.emit("toggle_help_request", { kind, id });
+}
+
+
 function renderStation() {
   const { station } = view;
   let watches = "";
@@ -302,12 +364,14 @@ function renderStation() {
   }
 
   app.innerHTML = `
-    <main class="station-view">
+    <main class="station-view${helpClass('station', station)}">
       ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
+      <div class="top-spacer"></div>
       ${roundHeader()}
       <h1 style="text-align:center;margin:14px 0;">🌺 ${escapeHtml(stationName(station))}</h1>
       <p style="text-align:center;margin-top:-8px;margin-bottom:14px;">Station ${station}</p>
       <section class="grid station-stopwatches">${watches}</section>
+      <button class="help-call-button" onclick="toggleHelp('station', '${station}')">Hilfe</button>
     </main>
   `;
 }
@@ -325,7 +389,7 @@ function renderTeam() {
   const team = state.teams[teamId] || { villages: 0, towns: 0, cities: 0 };
 
   app.innerHTML = `
-    <main class="team-layout">
+    <main class="team-layout${helpClass('team', teamId)}">
       <section>
         ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
         ${roundHeader()}
@@ -338,6 +402,7 @@ function renderTeam() {
         ${counterRow("Dörfer", team.villages, "village_minus", "village_plus")}
         ${counterRow("Städte", team.towns, "town_minus", "town_plus")}
         ${counterRow("Großstädte", team.cities, "city_minus", "city_plus")}
+        <button class="help-call-button" onclick="toggleHelp('team', '${teamId}')">Hilfe</button>
       </section>
     </main>
   `;
@@ -361,6 +426,6 @@ function teamAction(action) {
 socket.on("client_id", id => { clientId = id; });
 socket.on("state", next => { state = next; lastRoundTick = Date.now(); render(); });
 socket.on("orga_granted", granted => { orgaGranted = granted; render(); });
-socket.on("stopwatches", next => { stopwatches = next; if (view.type === "station") render(); });
+socket.on("stopwatches", next => { stopwatches = next; if (view.type === "station" || view.type === "helper") render(); });
 
 setInterval(() => socket.emit("get_stopwatches"), 1000);
