@@ -1,41 +1,27 @@
-# Zeltlager Game Manager - Flask-Version v8 HTTP
+# KjG-Aufbauspiel Manager
 
-Diese Version nutzt wieder HTTP, weil Browser selbstsignierte lokale HTTPS-Zertifikate häufig blockieren.
+Render-fertige Flask-/Socket.IO-Webapp für das KjG-Aufbauspiel.
 
-Alle bisherigen Design- und Funktionsänderungen bleiben erhalten:
+## Änderungen in dieser Version
 
-- einfarbige plastische Buttons
-- kompaktere Team-View
-- bereinigte Lobby
-- alle Timer blinken in den letzten 5 Sekunden weich
-- Default-Spielzeit an Stationen: 01:00 Minute
+- Rundentimer aktualisiert sich jetzt direkt im Browser, ohne manuelles Neuladen.
+- Lobby-Titel: `KjG-Aufbauspiel`.
+- Default-Stationsnamen: Holz 1, Holz 2, Fisch 1, Fisch 2, Stein 1, Stein 2, Kokosnuss 1, Kokosnuss 2, Schilf 1, Schilf 2.
+- Mehrere Personen können gleichzeitig in die Orga-View.
+- Pro Station kann weiterhin nur eine Person beitreten.
+- Blinkeffekt in den letzten 5 Sekunden ist deutlicher, aber weich.
+- Orga-View-Untertext entfernt.
+- Lobby-Bereiche für Stationen und Teams sind optisch gleich aufgebaut.
 
-## Installation
+## Lokal starten
 
 ```bash
 python -m pip install -r requirements.txt
-```
-
-## Start
-
-```bash
 python app.py
 ```
 
-Laptop:
+## Render Start Command
 
-```text
-http://localhost:5000
-```
-
-Handys im selben WLAN:
-
-```text
-http://DEINE-LAPTOP-IP:5000
-```
-
-Beispiel:
-
-```text
-http://192.168.178.23:5000
+```bash
+gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app
 ```

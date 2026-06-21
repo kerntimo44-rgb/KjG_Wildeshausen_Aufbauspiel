@@ -3,7 +3,7 @@ const socket = io();
 let clientId = null;
 let state = null;
 let view = { type: "lobby" };
-let orgaGranted = false;
+let orgaGranted = true;
 let stopwatches = {};
 
 const app = document.getElementById("app");
@@ -20,6 +20,38 @@ function timerClass(sec) {
 function stopwatchClass(sec) {
   return Number(sec) > 0 && Number(sec) <= 5 ? "stopwatch-time danger-timer" : "stopwatch-time";
 }
+
+let lastRoundTick = Date.now();
+
+function updateRoundTimerDom() {
+  if (!state) return;
+
+  document.querySelectorAll("[data-round-timer]").forEach(el => {
+    el.textContent = fmt(state.roundRemainingSec);
+    el.className = timerClass(state.roundRemainingSec) + (el.classList.contains("big-timer") ? " big-timer" : "");
+  });
+
+  document.querySelectorAll("[data-round-status]").forEach(el => {
+    el.textContent = state.roundRunning ? "Die Welle läuft" : "Die Welle ruht";
+  });
+}
+
+setInterval(() => {
+  if (!state || !state.roundRunning) {
+    lastRoundTick = Date.now();
+    return;
+  }
+
+  const now = Date.now();
+  const delta = Math.floor((now - lastRoundTick) / 1000);
+  if (delta <= 0) return;
+
+  lastRoundTick += delta * 1000;
+  state.roundRemainingSec = Math.max(0, Number(state.roundRemainingSec) - delta);
+  if (state.roundRemainingSec <= 0) state.roundRunning = false;
+
+  updateRoundTimerDom();
+}, 250);
 
 function parseTime(value, fallback) {
   const match = String(value || "").trim().match(/^(\d{1,3})(?::([0-5]?\d))?$/);
@@ -56,8 +88,8 @@ function roundHeader() {
     <div class="card round">
       <div class="label">🌊 Aktive Runde</div>
       <div class="round-number">${state.activeRound} / ${state.roundCount}</div>
-      <div class="${timerClass(state.roundRemainingSec)}">${fmt(state.roundRemainingSec)}</div>
-      <div class="label">${state.roundRunning ? "Die Welle läuft" : "Die Welle ruht"}</div>
+      <div class="${timerClass(state.roundRemainingSec)}" data-round-timer>${fmt(state.roundRemainingSec)}</div>
+      <div class="label" data-round-status>${state.roundRunning ? "Die Welle läuft" : "Die Welle ruht"}</div>
     </div>
   `;
 }
@@ -67,7 +99,6 @@ function go(next) {
   if (view.type === "station" || view.type === "team") socket.emit("leave_slot");
   view = next;
   if (next.type === "orga") {
-    orgaGranted = false;
     socket.emit("request_orga");
   }
   render();
@@ -93,7 +124,7 @@ function renderLobby() {
         <div>
           <div class="station-title">🌺 ${escapeHtml(stationName(s))}</div>
         </div>
-        ${button(`${occupied ? "🔒 Belegt" : "🐚 Station beitreten"}`, `joinStation(${s})`, occupied ? "secondary" : "", occupied)}
+        ${button(`${occupied ? "🔒 Belegt" : "Betreten"}`, `joinStation(${s})`, occupied ? "secondary" : "", occupied)}
       </div>
     `;
   }
@@ -101,18 +132,25 @@ function renderLobby() {
   let teams = "";
   for (let t = 1; t <= state.teamCount; t++) {
     const occupied = !!state.teams[String(t)]?.occupiedBy;
-    teams += button(`${occupied ? "🔒" : "🛶"} Team ${t}`, `joinTeam(${t})`, occupied ? "secondary" : "", occupied);
+    teams += `
+      <div class="station-box">
+        <div>
+          <div class="station-title">Team ${t}</div>
+        </div>
+        ${button(`${occupied ? "🔒 Belegt" : "Betreten"}`, `joinTeam(${t})`, occupied ? "secondary" : "", occupied)}
+      </div>
+    `;
   }
 
   app.innerHTML = `
     <main class="page">
       <div class="topbar">
-        <div><h1>Insel-Spiel Lobby</h1><p>Stationen und Teams betreten.</p></div>
+        <div><h1>KjG-Aufbauspiel</h1><p>Stationen und Teams betreten.</p></div>
         ${button("💻 Orga-View", "go({type:'orga'})")}
       </div>
       <div class="grid two">
         <section class="card lobby-section"><h2>🌴 Stationen</h2><div class="grid">${stations}</div></section>
-        <section class="card lobby-section"><h2>🛶 Teams</h2><div class="grid three">${teams}</div></section>
+        <section class="card lobby-section"><h2>🛶 Teams</h2><div class="grid">${teams}</div></section>
       </div>
     </main>
   `;
@@ -131,23 +169,10 @@ function joinTeam(team) {
 }
 
 function renderOrga() {
-  if (!orgaGranted) {
-    app.innerHTML = `
-      <main class="page">
-        <div class="card locked">
-          <h1>🔒 Orga-View ist bereits geöffnet</h1>
-          <p>Es darf nur eine Person gleichzeitig in der Orga-View sein.</p>
-          ${button("Zur Lobby", "go({type:'lobby'})", "secondary")}
-        </div>
-      </main>
-    `;
-    return;
-  }
-
   app.innerHTML = `
     <main class="page">
       <div class="topbar">
-        <div><h1>Orga-View</h1><p>Laptop-Ansicht für Konfiguration, Stationsnamen, Timer und Ranking.</p></div>
+        <div><h1>Orga-View</h1></div>
         ${button("🏠 Lobby", "go({type:'lobby'})", "secondary")}
       </div>
       <div class="grid orga-grid">
@@ -209,7 +234,7 @@ function stationNameInputs() {
     html += `
       <label class="station-name-row">
         <strong>Station ${s}</strong>
-        <input id="stationName-${s}" value="🌺 ${escapeHtml(stationName(s))}" placeholder="Name der Station">
+        <input id="stationName-${s}" value="${escapeHtml(stationName(s))}" placeholder="Name der Station">
       </label>
     `;
   }
@@ -251,7 +276,7 @@ function renderBigTimer() {
     <main class="big-timer-page">
       <div>
         <h1>Runde ${state.activeRound} / ${state.roundCount}</h1>
-        <div class="${timerClass(state.roundRemainingSec)} big-timer">${fmt(state.roundRemainingSec)}</div>
+        <div class="${timerClass(state.roundRemainingSec)} big-timer" data-round-timer>${fmt(state.roundRemainingSec)}</div>
       </div>
       <button class="secondary corner-back-button" onclick="go({type:'orga'})">Zur Orga-View</button>
     </main>
@@ -334,7 +359,7 @@ function teamAction(action) {
 }
 
 socket.on("client_id", id => { clientId = id; });
-socket.on("state", next => { state = next; render(); });
+socket.on("state", next => { state = next; lastRoundTick = Date.now(); render(); });
 socket.on("orga_granted", granted => { orgaGranted = granted; render(); });
 socket.on("stopwatches", next => { stopwatches = next; if (view.type === "station") render(); });
 

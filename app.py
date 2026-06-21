@@ -29,8 +29,20 @@ stopwatches = {}
 
 
 def default_station(station_number):
+    default_names = {
+        1: "Holz 1",
+        2: "Holz 2",
+        3: "Fisch 1",
+        4: "Fisch 2",
+        5: "Stein 1",
+        6: "Stein 2",
+        7: "Kokosnuss 1",
+        8: "Kokosnuss 2",
+        9: "Schilf 1",
+        10: "Schilf 2",
+    }
     return {
-        "name": f"Station {station_number}",
+        "name": default_names.get(int(station_number), f"Station {station_number}"),
         "occupiedBy": None,
     }
 
@@ -81,7 +93,7 @@ def normalize_structure():
         old = old_stations.get(key, {})
         if isinstance(old, dict):
             new_stations[key] = {
-                "name": old.get("name") or f"Station {station}",
+                "name": old.get("name") or default_station(station)["name"],
                 "occupiedBy": old.get("occupiedBy"),
             }
         else:
@@ -117,9 +129,6 @@ def handle_disconnect():
     sid = request.sid
     clients.pop(sid, None)
 
-    if state.get("orgaClientId") == sid:
-        state["orgaClientId"] = None
-
     for station in state["stations"].values():
         if station.get("occupiedBy") == sid:
             station["occupiedBy"] = None
@@ -133,27 +142,17 @@ def handle_disconnect():
 
 @socketio.on("request_orga")
 def request_orga():
-    sid = request.sid
-    if state.get("orgaClientId") in (None, sid):
-        state["orgaClientId"] = sid
-        emit("orga_granted", True)
-    else:
-        emit("orga_granted", False)
+    emit("orga_granted", True)
     broadcast_state()
 
 
 @socketio.on("leave_orga")
 def leave_orga():
-    if state.get("orgaClientId") == request.sid:
-        state["orgaClientId"] = None
     broadcast_state()
 
 
 @socketio.on("update_config")
 def update_config(data):
-    if state.get("orgaClientId") != request.sid:
-        return
-
     state["roundRemainingSec"] = current_round_remaining()
 
     for key in ["stationCount", "gamesPerStation", "teamCount", "roundCount", "roundDurationSec", "gameDurationSec"]:
@@ -171,9 +170,6 @@ def update_config(data):
 
 @socketio.on("update_station_name")
 def update_station_name(data):
-    if state.get("orgaClientId") != request.sid:
-        return
-
     station_id = str(data.get("station"))
     name = str(data.get("name", "")).strip()
 
@@ -185,9 +181,6 @@ def update_station_name(data):
 
 @socketio.on("reset_game")
 def reset_game():
-    if state.get("orgaClientId") != request.sid:
-        return
-
     state.clear()
     state.update(build_state())
     stopwatches.clear()
@@ -196,9 +189,6 @@ def reset_game():
 
 @socketio.on("toggle_round")
 def toggle_round():
-    if state.get("orgaClientId") != request.sid:
-        return
-
     remaining = current_round_remaining()
     if state["roundRunning"]:
         state["roundRemainingSec"] = remaining
@@ -216,9 +206,6 @@ def toggle_round():
 
 @socketio.on("next_round")
 def next_round():
-    if state.get("orgaClientId") != request.sid:
-        return
-
     state["activeRound"] = min(int(state["roundCount"]), int(state["activeRound"]) + 1)
     state["roundRemainingSec"] = int(state["roundDurationSec"])
     state["roundRunning"] = False

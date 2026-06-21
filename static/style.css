@@ -342,29 +342,32 @@ p {
 }
 
 .danger-timer {
-  animation: softPulse 1s ease-in-out infinite;
+  display: inline-block;
+  animation: softPulse .85s ease-in-out infinite;
 }
 
 @keyframes softPulse {
   0%, 100% {
     opacity: 1;
-    filter: brightness(1);
+    filter: brightness(1) saturate(1);
+    transform: scale(1);
     text-shadow:
       0 1px 0 #ffffff,
       0 3px 0 #0b83c8,
       0 7px 0 rgba(1, 19, 63, .46),
-      0 0 22px rgba(87,221,255,.70),
-      0 0 46px rgba(40,155,255,.44);
+      0 0 24px rgba(87,221,255,.75),
+      0 0 48px rgba(40,155,255,.48);
   }
   50% {
-    opacity: .68;
-    filter: brightness(1.35);
+    opacity: .42;
+    filter: brightness(1.8) saturate(1.25);
+    transform: scale(1.025);
     text-shadow:
       0 1px 0 #ffffff,
       0 3px 0 #0b83c8,
       0 7px 0 rgba(1, 19, 63, .46),
-      0 0 34px rgba(185,246,255,.95),
-      0 0 72px rgba(87,221,255,.72);
+      0 0 46px rgba(220,252,255,1),
+      0 0 92px rgba(87,221,255,.95);
   }
 }
 
@@ -707,4 +710,18 @@ p {
   .team-layout .timer {
     font-size: clamp(40px, 8vw, 76px);
   }
+}
+
+
+.lobby-section .station-box {
+  min-height: 118px;
+}
+
+.lobby-section .station-title {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.lobby-section .station-subtitle {
+  display: none;
 }
