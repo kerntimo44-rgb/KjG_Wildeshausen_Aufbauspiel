@@ -880,8 +880,8 @@ p {
 
 
 .clan-icon {
-  width: 42px;
-  height: 42px;
+  width: 53px;
+  height: 53px;
   object-fit: contain;
   vertical-align: middle;
   border-radius: 10px;
@@ -895,8 +895,8 @@ p {
 
 .clan-placeholder {
   display: inline-flex;
-  width: 42px;
-  height: 42px;
+  width: 53px;
+  height: 53px;
   align-items: center;
   justify-content: center;
   margin-right: 8px;
@@ -905,8 +905,8 @@ p {
 
 .inline-view-title .clan-icon,
 .station-title .clan-icon {
-  width: 46px;
-  height: 46px;
+  width: 58px;
+  height: 58px;
 }
 
 .team-settings-row {
@@ -944,4 +944,54 @@ select option {
 
 .orga-grid .help-list {
   margin-top: 4px;
+}
+
+
+.ranking-row {
+  grid-template-columns: 140px 1fr 70px;
+}
+
+.ranking-team-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ranking-clan-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: rgba(255,255,255,.92);
+  padding: 3px;
+  box-shadow:
+    0 3px 8px rgba(0,0,0,.25),
+    inset 0 0 0 1px rgba(0,0,0,.18);
+}
+
+.ranking-clan-placeholder {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 28px;
+}
+
+@media (max-width: 600px) {
+  .ranking-row {
+    grid-template-columns: 116px 1fr 56px;
+    gap: 8px;
+  }
+
+  .ranking-clan-icon,
+  .ranking-clan-placeholder {
+    width: 40px;
+    height: 40px;
+  }
 }

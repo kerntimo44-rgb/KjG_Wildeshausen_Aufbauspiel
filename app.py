@@ -69,10 +69,17 @@ def build_state():
         str(station): default_station(station)
         for station in range(1, new_state["stationCount"] + 1)
     }
-    new_state["teams"] = {
-        str(team): {"occupiedBy": None, "name": f"Team {team}", "clan": None, "villages": 0, "towns": 0, "cities": 0}
-        for team in range(1, new_state["teamCount"] + 1)
-    }
+    new_state["teams"] = {}
+    for team in range(1, new_state["teamCount"] + 1):
+        default_clan = CLANS[team - 1] if team - 1 < len(CLANS) else None
+        new_state["teams"][str(team)] = {
+            "occupiedBy": None,
+            "name": default_clan["name"] if default_clan else f"Team {team}",
+            "clan": default_clan["id"] if default_clan else None,
+            "villages": 0,
+            "towns": 0,
+            "cities": 0,
+        }
     return new_state
 
 

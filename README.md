@@ -2,12 +2,11 @@
 
 ## Änderungen in dieser Version
 
-- Die Helfer-Übersicht ist zusätzlich in der Orga-View direkt unter dem Timer sichtbar.
-- Team-Einstellungen enthalten jetzt ein Dropdown für Wappen.
-- Die hochgeladenen CLAN-Wappen sind in `static/clans/` eingebunden.
-- Bei Auswahl eines Wappens wird der Teamname automatisch auf den zugeordneten Māori-Ausdruck gesetzt.
-- Jedes Wappen kann nur einmal vergeben werden; vergebene Wappen sind in anderen Dropdowns deaktiviert.
-- Teamnamen und Wappen erscheinen in Lobby und Teamansicht.
+- Team 1 bekommt standardmäßig das erste Wappen im Dropdown, Team 2 das zweite usw.
+- Der Teamname wird dadurch standardmäßig auf den Māori-Ausdruck des jeweiligen Wappens gesetzt.
+- Im Team-Ranking wird statt der Platznummer links das jeweilige Wappen angezeigt.
+- Alle Wappenbilder werden ca. 25 % größer dargestellt.
+- Die Clan-/Wappen-Funktion aus der vorherigen Version bleibt erhalten.
 
 ## Lokal testen
 

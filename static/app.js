@@ -101,6 +101,11 @@ function clanImg(teamId) {
   return clan ? `<img class="clan-icon" src="/static/clans/${clan.file}" alt="${escapeHtml(clan.name)}">` : `<span class="clan-placeholder">${teamEmoji(teamId)}</span>`;
 }
 
+function rankingClanImg(teamId) {
+  const clan = clanById(state.teams[String(teamId)]?.clan);
+  return clan ? `<img class="ranking-clan-icon" src="/static/clans/${clan.file}" alt="${escapeHtml(clan.name)}">` : `<span class="ranking-clan-placeholder">${teamEmoji(teamId)}</span>`;
+}
+
 function usedClanIds(exceptTeamId = null) {
   return new Set(Object.entries(state.teams || {})
     .filter(([id]) => String(id) !== String(exceptTeamId))
@@ -395,7 +400,7 @@ function rankingHtml() {
       <h2>🏆 Team-Ranking</h2>
       ${rows.map((row, idx) => `
         <div class="ranking-row">
-          <strong>#${idx + 1} ${escapeHtml(teamName(row.id))}</strong>
+          <strong class="ranking-team-label">${rankingClanImg(row.id)} ${escapeHtml(teamName(row.id))}</strong>
           <div class="bar-bg"><div class="bar" style="width:${row.pts / max * 100}%"></div></div>
           <div class="points">${row.pts}</div>
         </div>
