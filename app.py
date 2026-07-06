@@ -28,6 +28,21 @@ state = {}
 clients = {}
 stopwatches = {}
 
+CLANS = [
+    {"id": "CLAN_Feder", "file": "CLAN_Feder.png", "name": "Huruhuru", "label": "Feder"},
+    {"id": "CLAN_Fisch", "file": "CLAN_Fisch.png", "name": "Ika", "label": "Fisch"},
+    {"id": "CLAN_Sterne", "file": "CLAN_Sterne.png", "name": "Whetū", "label": "Sterne"},
+    {"id": "CLAN_Schildkröte", "file": "CLAN_Schildkröte.png", "name": "Honu", "label": "Schildkröte"},
+    {"id": "CLAN_Maske", "file": "CLAN_Maske.png", "name": "Kanohi", "label": "Maske"},
+    {"id": "CLAN_Delfin", "file": "CLAN_Delfin.png", "name": "Aihe", "label": "Delfin"},
+    {"id": "CLAN_Schiff", "file": "CLAN_Schiff.png", "name": "Waka", "label": "Schiff"},
+    {"id": "CLAN_Sonne", "file": "CLAN_Sonne.png", "name": "Rā", "label": "Sonne"},
+    {"id": "CLAN_Haken", "file": "CLAN_Haken.png", "name": "Matau", "label": "Haken"},
+    {"id": "CLAN_Hibiskus", "file": "CLAN_Hibiskus.png", "name": "Kōkio", "label": "Hibiskus"},
+    {"id": "CLAN_Welle", "file": "CLAN_Welle.png", "name": "Ngaru", "label": "Welle"},
+]
+
+
 
 def default_station(station_number):
     default_names = {
@@ -55,7 +70,7 @@ def build_state():
         for station in range(1, new_state["stationCount"] + 1)
     }
     new_state["teams"] = {
-        str(team): {"occupiedBy": None, "name": f"Team {team}", "villages": 0, "towns": 0, "cities": 0}
+        str(team): {"occupiedBy": None, "name": f"Team {team}", "clan": None, "villages": 0, "towns": 0, "cities": 0}
         for team in range(1, new_state["teamCount"] + 1)
     }
     return new_state
@@ -74,6 +89,7 @@ def current_round_remaining():
 
 def snapshot():
     snap = copy.deepcopy(state)
+    snap["clans"] = CLANS
     snap["roundRemainingSec"] = current_round_remaining()
     if snap["roundRemainingSec"] <= 0:
         snap["roundRunning"] = False
@@ -102,7 +118,7 @@ def normalize_structure():
     state["stations"] = new_stations
 
     state["teams"] = {
-        str(team): old_teams.get(str(team), {"occupiedBy": None, "name": f"Team {team}", "villages": 0, "towns": 0, "cities": 0})
+        str(team): old_teams.get(str(team), {"occupiedBy": None, "name": f"Team {team}", "clan": None, "villages": 0, "towns": 0, "cities": 0})
         for team in range(1, int(state["teamCount"]) + 1)
     }
 
@@ -190,6 +206,31 @@ def update_station_name(data):
 
     broadcast_state()
 
+
+
+
+@socketio.on("update_team_clan")
+def update_team_clan(data):
+    team_id = str(data.get("team"))
+    clan_id = str(data.get("clan", "")).strip() or None
+
+    if team_id not in state["teams"]:
+        return
+
+    if clan_id is not None and not any(clan["id"] == clan_id for clan in CLANS):
+        return
+
+    if clan_id is not None:
+        for other_id, other_team in state["teams"].items():
+            if other_id != team_id and other_team.get("clan") == clan_id:
+                return
+
+    state["teams"][team_id]["clan"] = clan_id
+    selected = next((clan for clan in CLANS if clan["id"] == clan_id), None)
+    if selected:
+        state["teams"][team_id]["name"] = selected["name"]
+
+    broadcast_state()
 
 
 @socketio.on("update_team_name")

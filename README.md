@@ -2,24 +2,36 @@
 
 ## Änderungen in dieser Version
 
-- Stationsname steht oben neben dem Lobby-Button; Unterzeile „Station X“ entfällt.
-- Teamname steht oben neben dem Lobby-Button.
-- Leerzeile zwischen Lobby-Button-Zeile und Timer in Team-/Stationsansicht.
-- Abstand zwischen Team-Punktestand und Dörfer/Städte/Großstädte reduziert.
-- Lobby zeigt Teams mit kleinen Symbolen.
-- Teamnamen können in der Orga-View wie Stationsnamen bearbeitet werden.
-- Aktive Runde kann in der Orga-View manuell überschrieben werden.
-- Rundentimer kann in der Orga-View auf Startwert zurückgesetzt werden, ohne Runde oder Punkte zu ändern.
-- Hilfesystem bleibt erhalten.
+- Die Helfer-Übersicht ist zusätzlich in der Orga-View direkt unter dem Timer sichtbar.
+- Team-Einstellungen enthalten jetzt ein Dropdown für Wappen.
+- Die hochgeladenen CLAN-Wappen sind in `static/clans/` eingebunden.
+- Bei Auswahl eines Wappens wird der Teamname automatisch auf den zugeordneten Māori-Ausdruck gesetzt.
+- Jedes Wappen kann nur einmal vergeben werden; vergebene Wappen sind in anderen Dropdowns deaktiviert.
+- Teamnamen und Wappen erscheinen in Lobby und Teamansicht.
 
-## Lokal starten
+## Lokal testen
 
 ```bash
 python -m pip install -r requirements.txt
 python app.py
 ```
 
-## Render
+Dann öffnen:
+
+```text
+http://localhost:5000
+```
+
+## Auf Render aktualisieren
+
+1. ZIP entpacken.
+2. In deinem GitHub-Repository alle alten Dateien durch die neuen Dateien ersetzen.
+3. Änderungen committen.
+4. In Render öffnen.
+5. `Manual Deploy` auswählen.
+6. `Clear build cache & deploy` starten.
+
+## Render-Einstellungen
 
 Start Command:
 

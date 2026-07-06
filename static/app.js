@@ -88,6 +88,51 @@ function helpClass(kind, id) {
   return "";
 }
 
+function clans() {
+  return state.clans || [];
+}
+
+function clanById(clanId) {
+  return clans().find(clan => clan.id === clanId);
+}
+
+function clanImg(teamId) {
+  const clan = clanById(state.teams[String(teamId)]?.clan);
+  return clan ? `<img class="clan-icon" src="/static/clans/${clan.file}" alt="${escapeHtml(clan.name)}">` : `<span class="clan-placeholder">${teamEmoji(teamId)}</span>`;
+}
+
+function usedClanIds(exceptTeamId = null) {
+  return new Set(Object.entries(state.teams || {})
+    .filter(([id]) => String(id) !== String(exceptTeamId))
+    .map(([, team]) => team.clan)
+    .filter(Boolean));
+}
+
+function clanSelectOptions(teamId) {
+  const used = usedClanIds(teamId);
+  const current = state.teams[String(teamId)]?.clan || "";
+  let html = `<option value="">Kein Wappen</option>`;
+  for (const clan of clans()) {
+    const disabled = used.has(clan.id) ? "disabled" : "";
+    const selected = current === clan.id ? "selected" : "";
+    html += `<option value="${clan.id}" ${selected} ${disabled}>${clan.name} (${clan.label})${disabled ? " – vergeben" : ""}</option>`;
+  }
+  return html;
+}
+
+function helpOverviewHtml() {
+  const requests = [...(state.helpRequests || [])].sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+  if (!requests.length) {
+    return `<div class="card empty-help"><h2>Keine Hilferufe</h2><p>Wenn ein Team oder eine Station Hilfe ruft, erscheint es hier.</p></div>`;
+  }
+  return requests.map(req => {
+    const cls = req.status === "yellow" ? "help-button-yellow" : "help-button-red";
+    const prefix = req.kind === "team" ? "Team" : "Station";
+    return `<button class="${cls}" onclick="helperToggleHelp('${req.kind}', '${req.id}')">${prefix}: ${escapeHtml(req.label)}</button>`;
+  }).join("");
+}
+
+
 function points(team) {
   return team.villages + team.towns * 2 + team.cities * 3;
 }
@@ -157,7 +202,7 @@ function renderLobby() {
     teams += `
       <div class="station-box">
         <div>
-          <div class="station-title">${teamEmoji(t)} ${escapeHtml(teamName(t))}</div>
+          <div class="station-title">${clanImg(t)} ${escapeHtml(teamName(t))}</div>
         </div>
         ${button(`${occupied ? "🔒 Belegt" : "Betreten"}`, `joinTeam(${t})`, occupied ? "secondary" : "", occupied)}
       </div>
@@ -245,6 +290,10 @@ function renderOrga() {
         </section>
         <section class="grid">
           ${roundHeader()}
+          <div class="card">
+            <h2>🛟 Hilferufe</h2>
+            <section class="grid help-list">${helpOverviewHtml()}</section>
+          </div>
           ${rankingHtml(true)}
           <div class="card">
             <h2>🌴 Stationsnamen</h2>
@@ -287,6 +336,11 @@ function renderOrga() {
     input.addEventListener("change", e => {
       socket.emit("update_team_name", { team: t, name: e.target.value });
     });
+
+    const clan = document.getElementById(`teamClan-${t}`);
+    clan.addEventListener("change", e => {
+      socket.emit("update_team_clan", { team: t, clan: e.target.value });
+    });
   }
 }
 
@@ -307,10 +361,18 @@ function teamNameInputs() {
   let html = "";
   for (let t = 1; t <= state.teamCount; t++) {
     html += `
-      <label class="station-name-row">
-        <strong>Team ${t}</strong>
-        <input id="teamName-${t}" value="${escapeHtml(teamName(t))}" placeholder="Name des Teams">
-      </label>
+      <div class="team-settings-row">
+        <label class="station-name-row">
+          <strong>Team ${t}</strong>
+          <input id="teamName-${t}" value="${escapeHtml(teamName(t))}" placeholder="Name des Teams">
+        </label>
+        <label class="station-name-row clan-select-row">
+          <strong>Wappen</strong>
+          <select id="teamClan-${t}">
+            ${clanSelectOptions(t)}
+          </select>
+        </label>
+      </div>
     `;
   }
   return html;
@@ -365,21 +427,12 @@ function renderBigTimer() {
 
 
 function renderHelper() {
-  const requests = [...(state.helpRequests || [])].sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
-  const requestButtons = requests.length
-    ? requests.map(req => {
-        const cls = req.status === "yellow" ? "help-button-yellow" : "help-button-red";
-        const prefix = req.kind === "team" ? "Team" : "Station";
-        return `<button class="${cls}" onclick="helperToggleHelp('${req.kind}', '${req.id}')">${prefix}: ${escapeHtml(req.label)}</button>`;
-      }).join("")
-    : `<div class="card empty-help"><h2>Keine Hilferufe</h2><p>Wenn ein Team oder eine Station Hilfe ruft, erscheint es hier.</p></div>`;
-
   app.innerHTML = `
     <main class="station-view helper-view">
       ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
       <div class="top-spacer"></div>
       ${roundHeader()}
-      <section class="grid help-list">${requestButtons}</section>
+      <section class="grid help-list">${helpOverviewHtml()}</section>
     </main>
   `;
 }
@@ -442,7 +495,7 @@ function renderTeam() {
       <section>
         <div class="view-topline">
           ${button("🏠 Lobby", "go({type:'lobby'})", "ghost")}
-          <div class="inline-view-title">${teamEmoji(teamId)} ${escapeHtml(teamName(teamId))}</div>
+          <div class="inline-view-title">${clanImg(teamId)} ${escapeHtml(teamName(teamId))}</div>
         </div>
         <div class="top-spacer"></div>
         ${roundHeader()}
