@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 from flask_socketio import SocketIO, emit
 import time
 import copy
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "zeltlager-secret"
+ORGA_PASSWORD = "start123"
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 DEFAULTS = {
@@ -175,11 +176,36 @@ def handle_disconnect():
     broadcast_state()
 
 
+
+@socketio.on("check_orga_access")
+def check_orga_access():
+    emit("orga_access", bool(session.get("orga_authenticated")))
+
+
+@socketio.on("orga_login")
+def orga_login(data):
+    password = str((data or {}).get("password", ""))
+    if password == ORGA_PASSWORD:
+        session["orga_authenticated"] = True
+        emit("orga_access", True)
+    else:
+        emit("orga_access", False)
+
+
+@socketio.on("orga_logout")
+def orga_logout():
+    session.pop("orga_authenticated", None)
+    emit("orga_access", False)
+
+
+def orga_authorized():
+    return bool(session.get("orga_authenticated"))
+
+
 @socketio.on("request_orga")
 def request_orga():
-    emit("orga_granted", True)
+    emit("orga_granted", orga_authorized())
     broadcast_state()
-
 
 @socketio.on("leave_orga")
 def leave_orga():
@@ -188,6 +214,9 @@ def leave_orga():
 
 @socketio.on("update_config")
 def update_config(data):
+    if not orga_authorized():
+        return
+
     state["roundRemainingSec"] = current_round_remaining()
 
     for key in ["stationCount", "gamesPerStation", "teamCount", "roundCount", "roundDurationSec", "gameDurationSec"]:
@@ -205,6 +234,9 @@ def update_config(data):
 
 @socketio.on("update_station_name")
 def update_station_name(data):
+    if not orga_authorized():
+        return
+
     station_id = str(data.get("station"))
     name = str(data.get("name", "")).strip()
 
@@ -218,6 +250,9 @@ def update_station_name(data):
 
 @socketio.on("update_team_clan")
 def update_team_clan(data):
+    if not orga_authorized():
+        return
+
     team_id = str(data.get("team"))
     clan_id = str(data.get("clan", "")).strip() or None
 
@@ -242,6 +277,9 @@ def update_team_clan(data):
 
 @socketio.on("update_team_name")
 def update_team_name(data):
+    if not orga_authorized():
+        return
+
     team_id = str(data.get("team"))
     name = str(data.get("name", "")).strip()
 
@@ -253,6 +291,9 @@ def update_team_name(data):
 
 @socketio.on("set_active_round")
 def set_active_round(data):
+    if not orga_authorized():
+        return
+
     try:
         requested_round = int(data.get("round"))
     except (TypeError, ValueError):
@@ -264,6 +305,9 @@ def set_active_round(data):
 
 @socketio.on("reset_round_timer")
 def reset_round_timer():
+    if not orga_authorized():
+        return
+
     state["roundRemainingSec"] = int(state["roundDurationSec"])
     state["roundRunning"] = False
     state["roundLastStartedAt"] = None
@@ -272,6 +316,9 @@ def reset_round_timer():
 
 @socketio.on("reset_game")
 def reset_game():
+    if not orga_authorized():
+        return
+
     state.clear()
     state.update(build_state())
     stopwatches.clear()
@@ -280,6 +327,9 @@ def reset_game():
 
 @socketio.on("toggle_round")
 def toggle_round():
+    if not orga_authorized():
+        return
+
     remaining = current_round_remaining()
     if state["roundRunning"]:
         state["roundRemainingSec"] = remaining
@@ -297,6 +347,9 @@ def toggle_round():
 
 @socketio.on("next_round")
 def next_round():
+    if not orga_authorized():
+        return
+
     state["activeRound"] = min(int(state["roundCount"]), int(state["activeRound"]) + 1)
     state["roundRemainingSec"] = int(state["roundDurationSec"])
     state["roundRunning"] = False

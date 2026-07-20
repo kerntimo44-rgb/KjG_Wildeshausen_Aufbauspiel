@@ -1,36 +1,28 @@
 # KjG-Aufbauspiel Manager
 
-## Änderungen in dieser Version
+## Änderungen
 
-- Team 1 bekommt standardmäßig das erste Wappen im Dropdown, Team 2 das zweite usw.
-- Der Teamname wird dadurch standardmäßig auf den Māori-Ausdruck des jeweiligen Wappens gesetzt.
-- Im Team-Ranking wird statt der Platznummer links das jeweilige Wappen angezeigt.
-- Alle Wappenbilder werden ca. 25 % größer dargestellt.
-- Die Clan-/Wappen-Funktion aus der vorherigen Version bleibt erhalten.
+- Orga-View ist passwortgeschützt.
+- Passwort: `start123`
+- Anmeldung bleibt in der Browser-Sitzung aktiv.
+- Orga-Schreibaktionen werden serverseitig geschützt.
+- Weißer Außenbereich aller Wappen ist transparent.
+- Weiße Bestandteile innerhalb der Schilde bleiben erhalten.
 
-## Lokal testen
+## Lokal starten
 
 ```bash
 python -m pip install -r requirements.txt
 python app.py
 ```
 
-Dann öffnen:
-
-```text
-http://localhost:5000
-```
-
-## Auf Render aktualisieren
+## Render aktualisieren
 
 1. ZIP entpacken.
-2. In deinem GitHub-Repository alle alten Dateien durch die neuen Dateien ersetzen.
-3. Änderungen committen.
-4. In Render öffnen.
-5. `Manual Deploy` auswählen.
-6. `Clear build cache & deploy` starten.
-
-## Render-Einstellungen
+2. Dateien im GitHub-Repository ersetzen.
+3. Commit erstellen.
+4. In Render `Manual Deploy` öffnen.
+5. `Clear build cache & deploy` auswählen.
 
 Start Command:
 

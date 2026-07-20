@@ -3,7 +3,7 @@ const socket = io();
 let clientId = null;
 let state = null;
 let view = { type: "lobby" };
-let orgaGranted = true;
+let orgaGranted = false;
 let stopwatches = {};
 
 const app = document.getElementById("app");
@@ -170,7 +170,8 @@ function go(next) {
   if (view.type === "station" || view.type === "team") socket.emit("leave_slot");
   view = next;
   if (next.type === "orga") {
-    socket.emit("request_orga");
+    orgaGranted = false;
+    socket.emit("check_orga_access");
   }
   render();
 }
@@ -251,6 +252,28 @@ function joinTeam(team) {
 }
 
 function renderOrga() {
+  if (!orgaGranted) {
+    app.innerHTML = `
+      <main class="page">
+        <div class="card orga-login-card">
+          <h1>Orga-View</h1>
+          <p>Bitte Passwort eingeben.</p>
+          <div class="orga-login-form">
+            <input id="orgaPassword" type="password" placeholder="Passwort">
+            <button onclick="submitOrgaLogin()">Anmelden</button>
+          </div>
+          <div id="orgaLoginError" class="orga-login-error"></div>
+          <button class="secondary" onclick="go({type:'lobby'})">Zur Lobby</button>
+        </div>
+      </main>
+    `;
+    const input = document.getElementById("orgaPassword");
+    input?.focus();
+    input?.addEventListener("keydown", event => {
+      if (event.key === "Enter") submitOrgaLogin();
+    });
+    return;
+  }
   let helpers = `
     <div class="station-box">
       <div>
@@ -264,7 +287,7 @@ function renderOrga() {
     <main class="page">
       <div class="topbar">
         <div><h1>Orga-View</h1></div>
-        ${button("🏠 Lobby", "go({type:'lobby'})", "secondary")}
+        ${button("Abmelden", "logoutOrga()", "secondary")}
       </div>
       <div class="grid orga-grid">
         <section class="card">
@@ -381,6 +404,16 @@ function teamNameInputs() {
     `;
   }
   return html;
+}
+
+function submitOrgaLogin() {
+  const input = document.getElementById("orgaPassword");
+  socket.emit("orga_login", { password: input?.value || "" });
+}
+
+function logoutOrga() {
+  socket.emit("orga_logout");
+  go({type:"lobby"});
 }
 
 function toggleRound() { socket.emit("toggle_round"); }
@@ -537,6 +570,14 @@ function teamAction(action) {
 socket.on("client_id", id => { clientId = id; });
 socket.on("state", next => { state = next; lastRoundTick = Date.now(); render(); });
 socket.on("orga_granted", granted => { orgaGranted = granted; render(); });
+socket.on("orga_access", granted => {
+  orgaGranted = granted;
+  if (!granted) {
+    const error = document.getElementById("orgaLoginError");
+    if (error) error.textContent = "Falsches Passwort.";
+  }
+  render();
+});
 socket.on("stopwatches", next => { stopwatches = next; if (view.type === "station" || view.type === "helper") render(); });
 
 setInterval(() => socket.emit("get_stopwatches"), 1000);
